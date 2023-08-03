@@ -75,6 +75,7 @@ DIRECTION_DOWN = 2
 DIRECTION_LEFT = 3
 
 direction_keys = [keys.UP, keys.RIGHT, keys.DOWN, keys.LEFT]
+direction_btns = [1, 3, 2, 0]
 
 # X and Y directions indexed into by in_edge and out_edge in Segment
 # The indices correspond to the direction numbers above, i.e. 0 = up, 1 = right, 2 = down, 3 = left
@@ -121,7 +122,7 @@ class Bunner(MyActor):
     def update(self):
         # Check each control direction
         for direction in range(4):
-            if key_just_pressed(direction_keys[direction]):
+            if key_just_pressed(direction_keys[direction]) or btn_just_pressed(direction_btns[direction]):
                 self.input_queue.append(direction)
 
         if self.state == PlayerState.ALIVE:
@@ -786,9 +787,24 @@ class Game:
             # If sound system is not working/present, ignore the error
             pass
 
-# Dictionary to keep track of which keys are currently being held down
+# Dictionaries to keep track of which keys and buttons are currently being held down
 key_status = {}
+btn_status = {}
 
+def btn_just_pressed(btn):
+    result = False
+
+    joystick = joysticks[0]
+    prev_status = btn_status.get(btn, False)
+    btn_state = joystick.get_button(btn)
+
+    if not prev_status and btn_state:
+        result = True
+    
+    btn_status[btn] = btn_state
+    
+    return result
+    
 # Was the given key just pressed? (i.e. is it currently down, but wasn't down on the previous frame?)
 def key_just_pressed(key):
     result = False
@@ -826,7 +842,7 @@ def update():
     global state, game, high_score
 
     if state == State.MENU:
-        if key_just_pressed(keys.SPACE):
+        if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
             state = State.PLAY
             game = Game(Bunner((240, -320)))
         else:
@@ -852,7 +868,7 @@ def update():
 
     elif state == State.GAME_OVER:
         # Switch to menu state, and create a new game object without a player
-        if key_just_pressed(keys.SPACE):
+        if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
             game.stop_looped_sounds()
             state = State.MENU
             game = Game()
@@ -892,6 +908,17 @@ except:
 
 # Set the initial game state
 state = State.MENU
+
+joysticks = {}
+
+# Get count of joysticks.
+joystick_count = pygame.joystick.get_count()
+
+for i in range(joystick_count):
+    joy = pygame.joystick.Joystick(i)
+    joy.init()
+    joysticks[joy.get_id()] = joy
+    print(f"Joystick {joy.get_id()} connected")
 
 # Create a new Game object, without a Player object
 game = Game()
