@@ -845,6 +845,9 @@ def update():
         if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
             state = State.PLAY
             game = Game(Bunner((240, -320)))
+        elif btn_just_pressed(4):
+            pygame.quit()
+            sys.exit()
         else:
             game.update()
 
@@ -872,6 +875,9 @@ def update():
             game.stop_looped_sounds()
             state = State.MENU
             game = Game()
+        elif btn_just_pressed(4):
+            pygame.quit()
+            sys.exit()
 
 def draw():
     game.draw()
