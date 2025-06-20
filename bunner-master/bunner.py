@@ -75,7 +75,7 @@ DIRECTION_DOWN = 2
 DIRECTION_LEFT = 3
 
 direction_keys = [keys.UP, keys.RIGHT, keys.DOWN, keys.LEFT]
-direction_btns = [1, 3, 2, 0]
+direction_btns = [3, 1, 0, 2] # for 8BitDo Zero 2 in X-input mode
 
 # X and Y directions indexed into by in_edge and out_edge in Segment
 # The indices correspond to the direction numbers above, i.e. 0 = up, 1 = right, 2 = down, 3 = left
@@ -797,7 +797,8 @@ def btn_just_pressed(btn):
     joystick = joysticks[0]
     prev_status = btn_status.get(btn, False)
     btn_state = joystick.get_button(btn)
-
+    if btn_state != prev_status:
+        print(f"Button {btn} state: {btn_state}, previous state: {prev_status}")
     if not prev_status and btn_state:
         result = True
     
@@ -842,10 +843,10 @@ def update():
     global state, game, high_score
 
     if state == State.MENU:
-        if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
+        if key_just_pressed(keys.SPACE) or btn_just_pressed(7):
             state = State.PLAY
             game = Game(Bunner((240, -320)))
-        elif btn_just_pressed(4):
+        elif btn_just_pressed(6):
             pygame.quit()
             sys.exit()
         else:
@@ -871,11 +872,11 @@ def update():
 
     elif state == State.GAME_OVER:
         # Switch to menu state, and create a new game object without a player
-        if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
+        if key_just_pressed(keys.SPACE) or btn_just_pressed(7):
             game.stop_looped_sounds()
             state = State.MENU
             game = Game()
-        elif btn_just_pressed(4):
+        elif btn_just_pressed(6):
             pygame.quit()
             sys.exit()
 
@@ -924,7 +925,7 @@ for i in range(joystick_count):
     joy = pygame.joystick.Joystick(i)
     joy.init()
     joysticks[joy.get_id()] = joy
-    print(f"Joystick {joy.get_id()} connected")
+    print(f"Joystick {joy.get_id()} connected: {joy.get_name()}")
 
 # Create a new Game object, without a Player object
 game = Game()
