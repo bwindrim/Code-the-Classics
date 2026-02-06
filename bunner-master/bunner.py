@@ -20,11 +20,38 @@ if pgzero_version < [1,2]:
     print("This game requires at least version 1.2 of Pygame Zero. You have version {0}. Please upgrade using the command 'pip3 install --upgrade pgzero'".format(pgzero.__version__))
     sys.exit()
 
-WIDTH = 480 
-HEIGHT = 800
+WIDTH = 720
+HEIGHT = 720
 TITLE = "Infinite Bunner"
 
 ROW_HEIGHT = 40
+
+# Base art dimensions for menu screens (title/gameover).
+BASE_WIDTH = 480
+BASE_HEIGHT = 800
+UI_SCALE = min(WIDTH / BASE_WIDTH, HEIGHT / BASE_HEIGHT)
+
+TITLE_SIZE = (int(BASE_WIDTH * UI_SCALE), int(BASE_HEIGHT * UI_SCALE))
+TITLE_POS = ((WIDTH - TITLE_SIZE[0]) // 2, (HEIGHT - TITLE_SIZE[1]) // 2)
+
+GAMEOVER_SIZE = TITLE_SIZE
+GAMEOVER_POS = TITLE_POS
+
+START_BASE_SIZE = (270, 60)
+START_SIZE = (int(START_BASE_SIZE[0] * UI_SCALE), int(START_BASE_SIZE[1] * UI_SCALE))
+START_POS = ((WIDTH - START_SIZE[0]) // 2, int(HEIGHT * 0.7))
+
+# Player spawn position relative to the window size (originally centered, 40% above the top).
+BUNNER_START_POS = (WIDTH // 2, -int(HEIGHT * 0.4))
+
+# Preload scaled menu surfaces.
+TITLE_SURFACE = pygame.transform.smoothscale(pygame.image.load("images/title.png"), TITLE_SIZE)
+GAMEOVER_SURFACE = pygame.transform.smoothscale(pygame.image.load("images/gameover.png"), GAMEOVER_SIZE)
+START_SURFACES = [
+    pygame.transform.smoothscale(pygame.image.load("images/start0.png"), START_SIZE),
+    pygame.transform.smoothscale(pygame.image.load("images/start1.png"), START_SIZE),
+    pygame.transform.smoothscale(pygame.image.load("images/start2.png"), START_SIZE),
+]
 
 # See what happens when you change this to True
 DEBUG_SHOW_ROW_BOUNDARIES = False
@@ -290,6 +317,25 @@ class Row(MyActor):
     def allow_movement(self, x):
         # Ensure the player can't walk off the left or right sides of the screen
         return x >= 16 and x <= WIDTH-16
+
+    def draw(self, offset_x, offset_y):
+        # Tile the row background image across the full window width.
+        base_x = self.x + offset_x
+        base_y = self.y + offset_y
+        tile_w = self.width
+        tile_h = self.height
+        top_y = base_y - tile_h
+
+        x = base_x
+        while x > 0:
+            x -= tile_w
+
+        while x < WIDTH:
+            screen.blit(self.image, (x, top_y))
+            x += tile_w
+
+        for child_obj in self.children:
+            child_obj.draw(base_x, base_y)
 
 class ActiveRow(Row):
     def __init__(self, child_type, dxs, base_image, index, y):
@@ -844,7 +890,7 @@ def update():
     if state == State.MENU:
         if key_just_pressed(keys.SPACE) or btn_just_pressed(5):
             state = State.PLAY
-            game = Game(Bunner((240, -320)))
+            game = Game(Bunner(BUNNER_START_POS))
         elif btn_just_pressed(4):
             pygame.quit()
             sys.exit()
@@ -883,8 +929,9 @@ def draw():
     game.draw()
 
     if state == State.MENU:
-        screen.blit("title", (0, 0))
-        screen.blit("start" + str([0, 1, 2, 1][game.scroll_pos // 6 % 4]), ((WIDTH - 270) // 2, HEIGHT - 240))
+        screen.surface.blit(TITLE_SURFACE, TITLE_POS)
+        start_frame = [0, 1, 2, 1][game.scroll_pos // 6 % 4]
+        screen.surface.blit(START_SURFACES[start_frame], START_POS)
 
     elif state == State.PLAY:
         # Display score and high score
@@ -893,7 +940,7 @@ def draw():
 
     elif state == State.GAME_OVER:
         # Display "Game Over" image
-        screen.blit("gameover", (0, 0))
+        screen.surface.blit(GAMEOVER_SURFACE, GAMEOVER_POS)
 
 # Set up sound system
 try:
