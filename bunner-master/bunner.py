@@ -782,7 +782,11 @@ class Game:
                     screen.draw.text(str(obj.index), (obj.x, obj.y - int(self.scroll_pos) - ROW_HEIGHT))
 
     def score(self):
-        return int(-320 - game.bunner.min_y) // 40
+        if not self.bunner:
+            return 0
+
+        # Score is based on rows advanced upward from the configured spawn row.
+        return max(0, (BUNNER_START_POS[1] - self.bunner.min_y) // ROW_HEIGHT)
 
     def play_sound(self, name, count=1):
         try:
@@ -837,18 +841,22 @@ class Game:
 key_status = {}
 btn_status = {}
 
-def btn_just_pressed(btn):
-    result = False
+def get_primary_joystick():
+    if joysticks:
+        return next(iter(joysticks.values()))
+    return None
 
-    joystick = joysticks[0]
+def btn_just_pressed(btn):
+    joystick = get_primary_joystick()
+    if not joystick:
+        return False
+
     prev_status = btn_status.get(btn, False)
     btn_state = joystick.get_button(btn)
 
-    if not prev_status and btn_state:
-        result = True
-    
+    result = (not prev_status and btn_state)
     btn_status[btn] = btn_state
-    
+
     return result
     
 # Was the given key just pressed? (i.e. is it currently down, but wasn't down on the previous frame?)
@@ -963,6 +971,12 @@ except:
 state = State.MENU
 
 joysticks = {}
+
+# Initialize joystick subsystem (safe even if no joystick present).
+try:
+    pygame.joystick.init()
+except:
+    pass
 
 # Get count of joysticks.
 joystick_count = pygame.joystick.get_count()
